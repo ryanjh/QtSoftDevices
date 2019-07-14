@@ -1,5 +1,4 @@
 #include <QCoreApplication>
-#include <QSerialPort>
 #include <QDebug>
 
 #include "qsoftdevices.h"
@@ -22,6 +21,11 @@ int main(int argc, char *argv[])
     }
 
     QSoftDevices softDevice(&serialPort);
+    //echo -e '\x06\x00\x00\x02\x03\x04\x05\x06' > /dev/ttyACM0
+    //cmd: 0300 00 4c 00
+    //evt: 0700 01 4c 00 00000000
+    QByteArray command(std::begin<char>({0x03, 0x00, 0x00, 0x4c, 0x00}), 5);
+    softDevice.write(command);
 
     return a.exec();
 }
