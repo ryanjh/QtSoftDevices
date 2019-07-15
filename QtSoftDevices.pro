@@ -1,4 +1,4 @@
-QT = core
+QT = core core-private
 QT += serialport
 
 CONFIG += c++11 console

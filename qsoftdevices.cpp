@@ -7,7 +7,6 @@ QSoftDevices::QSoftDevices(QIODevice *serialDevice, QObject *parent)
 {
     connect(m_serialDevice, &QIODevice::readyRead, this, &QSoftDevices::handleReadyRead);
     connect(m_serialDevice, &QIODevice::bytesWritten, this, &QSoftDevices::handleBytesWritten);
-    //connect(m_serialDevice, &QIODevice::errorOccurred, this, &QSoftDevices::handleError);
 }
 
 QSoftDevices::~QSoftDevices()
@@ -23,11 +22,8 @@ void QSoftDevices::handleReadyRead()
 void QSoftDevices::handleBytesWritten(qint64 bytes)
 {
     qDebug() << "handleBytesWritten" << bytes;
-}
-
-void QSoftDevices::handleError(QSerialPort::SerialPortError serialPortError)
-{
-    qDebug() << "handleError" << serialPortError;
+    if (!m_commands.isEmpty())
+        write(m_commands.read());
 }
 
 void QSoftDevices::write(const QByteArray &writeData)
@@ -60,6 +56,12 @@ qint64 QSoftDevices::writeData(const char *data, qint64 maxSize)
     Q_UNUSED(data);
     Q_UNUSED(maxSize);
     return 0;
+}
+
+void QSoftDevices::sendCommand(const QByteArray bytes)
+{
+    m_commands.append(bytes);
+    qDebug() << "> m_commands.nextDataBlockSize" << m_commands.nextDataBlockSize();
 }
 
 
