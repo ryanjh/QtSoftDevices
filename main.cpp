@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 
     QSoftDevices softDevice(&serialPort);
 
+    //TODO: how to use initialize list for command?
     QByteArray cmd3(std::begin<char>({0x03, 0x00, 0x00, 0x4c, 0x00}), 5);
     softDevice.sendCommand(cmd3);
     softDevice.sendCommand(cmd3);
@@ -33,7 +34,6 @@ int main(int argc, char *argv[])
     //evt: 0700 01 4c 00 00000000
     QByteArray command(std::begin<char>({0x03, 0x00, 0x00, 0x4c, 0x00}), 5);
     softDevice.write(command);
-
 
     return a.exec();
 }

@@ -9,12 +9,12 @@ class QSoftDevices : public QIODevice
     Q_OBJECT
 
 public:
-    explicit QSoftDevices(QIODevice *serialDevice, QObject *parent = nullptr);
+    QSoftDevices(QIODevice *serialDevice, QObject *parent = nullptr);
     virtual ~QSoftDevices();
 
-    void write(const QByteArray &writeData);
     qint64 readData(char *data, qint64 maxSize) override;
     qint64 writeData(const char *data, qint64 maxSize) override;
+    qint64 bytesAvailable() const override;
 
     void sendCommand(const QByteArray bytes);
 
@@ -28,6 +28,7 @@ private slots:
 private:
     QIODevice *m_serialDevice = nullptr;
     QRingBuffer m_commands;
+    QRingBuffer m_events;
 };
 
 #endif // QSOFTDEVICES_H

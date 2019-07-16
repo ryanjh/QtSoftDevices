@@ -1,61 +1,16 @@
-#include <QDebug>
-
+#include <QDebug> //TODO: use Qt logging categories
 #include "qsoftdevices.h"
 
 QSoftDevices::QSoftDevices(QIODevice *serialDevice, QObject *parent)
     : m_serialDevice(serialDevice)
 {
-    connect(m_serialDevice, &QIODevice::readyRead, this, &QSoftDevices::handleReadyRead);
-    connect(m_serialDevice, &QIODevice::bytesWritten, this, &QSoftDevices::handleBytesWritten);
+    this->open(QIODevice::ReadWrite); //TODO: way to set mode
+    QObject::connect(m_serialDevice, &QIODevice::readyRead, this, &QSoftDevices::handleReadyRead);
+    QObject::connect(m_serialDevice, &QIODevice::bytesWritten, this, &QSoftDevices::handleBytesWritten);
 }
 
 QSoftDevices::~QSoftDevices()
 {
-}
-
-void QSoftDevices::handleReadyRead()
-{
-    qDebug() << "handleReadyRead" << m_serialDevice->bytesAvailable();
-    qDebug() << m_serialDevice->readAll().toHex();
-}
-
-void QSoftDevices::handleBytesWritten(qint64 bytes)
-{
-    qDebug() << "handleBytesWritten" << bytes;
-    if (!m_commands.isEmpty())
-        write(m_commands.read());
-}
-
-void QSoftDevices::write(const QByteArray &writeData)
-{
-    const qint64 bytesWritten = m_serialDevice->write(writeData);
-    if (bytesWritten == -1) {
-        qDebug() << "Failed to write the data";
-    } else if (bytesWritten != writeData.size()) {
-        qDebug() << "Failed to write all the data";
-    }
-}
-
-/*!
-    \reimp
-*/
-qint64 QSoftDevices::readData(char *data, qint64 maxSize)
-{
-    Q_UNUSED(data);
-    Q_UNUSED(maxSize);
-    return qint64(0);
-}
-
-/*!
-    \reimp
-*/
-qint64 QSoftDevices::writeData(const char *data, qint64 maxSize)
-{
-    //Q_D(QSerialPort);
-    //return d->writeData(data, maxSize);
-    Q_UNUSED(data);
-    Q_UNUSED(maxSize);
-    return 0;
 }
 
 void QSoftDevices::sendCommand(const QByteArray bytes)
@@ -64,4 +19,44 @@ void QSoftDevices::sendCommand(const QByteArray bytes)
     qDebug() << "> m_commands.nextDataBlockSize" << m_commands.nextDataBlockSize();
 }
 
+void QSoftDevices::handleReadyRead()
+{
+    qDebug() << "handleReadyRead" << this->bytesAvailable();
+    qDebug() << this->readAll().toHex();
+    //TODO: buffer event and emit receivedEvent
+}
 
+void QSoftDevices::handleBytesWritten(qint64 bytes)
+{
+    qDebug() << "handleBytesWritten" << bytes;
+    //TODO: check size of written and rollback m_commands
+    if (!m_commands.isEmpty())
+        this->write(m_commands.read());
+}
+
+/*!
+    \reimp
+*/
+qint64 QSoftDevices::readData(char *data, qint64 maxSize)
+{
+    Q_ASSERT(m_serialDevice);
+    return m_serialDevice->read(data, maxSize);
+}
+
+/*!
+    \reimp
+*/
+qint64 QSoftDevices::writeData(const char *data, qint64 maxSize)
+{
+    Q_ASSERT(m_serialDevice);
+    return m_serialDevice->write(data, maxSize);
+}
+
+/*!
+    \reimp
+*/
+qint64 QSoftDevices::bytesAvailable() const
+{
+    Q_ASSERT(m_serialDevice);
+    return m_serialDevice->bytesAvailable();
+}
