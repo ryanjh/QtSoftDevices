@@ -2,6 +2,7 @@
 #define QSOFTDEVICES_H
 
 #include <QIODevice>
+#include <QVarLengthArray>
 #include <private/qringbuffer_p.h>
 
 class QSoftDevices : public QIODevice
@@ -16,7 +17,8 @@ public:
     qint64 writeData(const char *data, qint64 maxSize) override;
     qint64 bytesAvailable() const override;
 
-    void sendCommand(const QByteArray bytes);
+    void sendCommand(const QVarLengthArray<char> bytes);
+    void sendCommand(const QByteArray *bytes); //NOTE: QByteArray &bytes will cause ambiguous
 
 signals:
     void receivedEvent(QByteArray bytes);
