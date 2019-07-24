@@ -11,26 +11,33 @@ class QSoftDevices : public QIODevice
 
 public:
     QSoftDevices(QIODevice *serialDevice, QObject *parent = nullptr);
-    virtual ~QSoftDevices();
+    virtual ~QSoftDevices() {} // TODO: disconnect
 
     qint64 readData(char *data, qint64 maxSize) override;
     qint64 writeData(const char *data, qint64 maxSize) override;
     qint64 bytesAvailable() const override;
 
-    void sendCommand(const QVarLengthArray<char> bytes);
-    void sendCommand(const QByteArray *bytes); //NOTE: QByteArray &bytes will cause ambiguous
+    inline void writeCommand(const QVarLengthArray<char> bytes)
+    { writeData(bytes.constData(), bytes.size()); }
+    //TODO: readEvent ?
+
+    const quint32 COMMANDSIZE = 3;
+
+protected:
+    qint64 transmitCommands(QRingBuffer *commands);
+    qint64 receiveEvents(QRingBuffer *events);
 
 signals:
+    void scheduleWrite(QRingBuffer *commands);
     void receivedEvent(QByteArray bytes);
 
 private slots:
     void handleReadyRead();
-    void handleBytesWritten(qint64 bytes);
 
 private:
-    QIODevice *m_serialDevice = nullptr;
-    QRingBuffer m_commands;
-    QRingBuffer m_events;
+    QIODevice *serialDevice = nullptr;
+    QRingBuffer commandBuffer;
+    QRingBuffer eventBuffer;
 };
 
 #endif // QSOFTDEVICES_H

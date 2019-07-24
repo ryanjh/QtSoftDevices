@@ -2,44 +2,18 @@
 #include "qsoftdevices.h"
 
 QSoftDevices::QSoftDevices(QIODevice *serialDevice, QObject *parent)
-    : m_serialDevice(serialDevice)
+    : serialDevice(serialDevice)
 {
-    this->open(QIODevice::ReadWrite); //TODO: way to set mode
-    QObject::connect(m_serialDevice, &QIODevice::readyRead, this, &QSoftDevices::handleReadyRead);
-    QObject::connect(m_serialDevice, &QIODevice::bytesWritten, this, &QSoftDevices::handleBytesWritten);
-}
-
-QSoftDevices::~QSoftDevices()
-{
-}
-
-void QSoftDevices::sendCommand(const QVarLengthArray<char> bytes)
-{
-    m_commands.append(QByteArray(bytes.constData(), bytes.size()));
-    qDebug() << "> QVarLengthArray: m_commands.nextDataBlockSize" << m_commands.nextDataBlockSize();
-}
-
-void QSoftDevices::sendCommand(const QByteArray *bytes)
-{
-    Q_ASSERT(bytes);
-    m_commands.append(*bytes);
-    qDebug() << "> QByteArray: m_commands.nextDataBlockSize" << m_commands.nextDataBlockSize();
-}
-
-void QSoftDevices::handleReadyRead()
-{
-    qDebug() << "handleReadyRead" << this->bytesAvailable();
-    qDebug() << this->readAll().toHex();
-    //TODO: buffer event and emit receivedEvent
-}
-
-void QSoftDevices::handleBytesWritten(qint64 bytes)
-{
-    qDebug() << "handleBytesWritten" << bytes;
-    //TODO: another way to trigger m_commands flush
-    //TODO: check size of written and rollback m_commands
-    if (!m_commands.isEmpty())
-        this->write(m_commands.read());
+    open(QIODevice::ReadWrite); //TODO: way to set mode
+    QObject::connect(serialDevice, &QIODevice::readyRead, this, &QSoftDevices::handleReadyRead);
+    QObject::connect( //TODO: remove debug only
+        serialDevice, &QIODevice::bytesWritten,
+        [](qint64 bytes) { qDebug() << "handleBytesWritten" << bytes; }
+    );
+    QObject::connect(
+        this, &QSoftDevices::scheduleWrite,
+        [this](QRingBuffer *commands) { transmitCommands(commands);}
+    );
 }
 
 /*!
@@ -47,8 +21,9 @@ void QSoftDevices::handleBytesWritten(qint64 bytes)
 */
 qint64 QSoftDevices::readData(char *data, qint64 maxSize)
 {
-    Q_ASSERT(m_serialDevice);
-    return m_serialDevice->read(data, maxSize);
+    Q_ASSERT(data);
+    Q_ASSERT(serialDevice);
+    return serialDevice->read(data, maxSize);
 }
 
 /*!
@@ -56,20 +31,13 @@ qint64 QSoftDevices::readData(char *data, qint64 maxSize)
 */
 qint64 QSoftDevices::writeData(const char *data, qint64 maxSize)
 {
-    Q_ASSERT(m_serialDevice);
-    // ----------------------------------------------------------
-    // TODO: better option
-    QByteArray header;
-    qint16 size = qint16(maxSize + 1); // "\x03\x00\x00\x4c\x00"
-    header.append(char(size & 0xFF));
-    header.append(char((size >> 8) & 0xFF));
-    header.append(char('\x00'));
-    // ----------------------------------------------------------
-    if (m_serialDevice->write(header, header.size()) != header.size()) {
-        qDebug() << "### Error: writeData header fail";
-        return 0;
-    }
-    return m_serialDevice->write(data, maxSize);
+    Q_ASSERT(data);
+    char command[] = {(maxSize + 1) & 0xFF, ((maxSize + 1) >> 8) & 0xFF, 0x00};
+    commandBuffer.append(command, sizeof(command));
+    commandBuffer.append(data, maxSize);
+    emit scheduleWrite(&commandBuffer);
+    // the scheduler will transmit all the buffered commands to device
+    return maxSize;
 }
 
 /*!
@@ -77,6 +45,45 @@ qint64 QSoftDevices::writeData(const char *data, qint64 maxSize)
 */
 qint64 QSoftDevices::bytesAvailable() const
 {
-    Q_ASSERT(m_serialDevice);
-    return m_serialDevice->bytesAvailable();
+    Q_ASSERT(serialDevice);
+    return serialDevice->bytesAvailable();
+}
+
+qint64 QSoftDevices::transmitCommands(QRingBuffer *commands)
+{
+    Q_ASSERT(commands);
+    Q_ASSERT(serialDevice);
+    qint64 writeSize = 0;
+    //TODO: check size of written and rollback m_commands, then emit scheduleWrite
+    if (!commands->isEmpty()) {
+        writeSize = serialDevice->write(commands->read());
+        qDebug() << "transmitCommands" << writeSize;
+    }
+    return writeSize;
+}
+
+qint64 QSoftDevices::receiveEvents(QRingBuffer *events)
+{
+    Q_ASSERT(events);
+    Q_ASSERT(serialDevice);
+    if (serialDevice->bytesAvailable() >= COMMANDSIZE) {
+        // remove HCI
+    }
+    qDebug() << "receiveEvents";
+
+    return 0;
+}
+
+void QSoftDevices::handleReadyRead()
+{
+    qDebug() << "handleReadyRead" << bytesAvailable();
+    // ----------------------------------------------------------
+    // TODO: better option
+    if (bytesAvailable() >= 3) {
+        // remove HCI
+    }
+    // ----------------------------------------------------------
+    QByteArray event = readAll();
+    //TODO: buffer event and emit receivedEvent
+    emit receivedEvent(event);
 }

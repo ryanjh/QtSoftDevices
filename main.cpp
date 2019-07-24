@@ -22,24 +22,29 @@ int main(int argc, char *argv[])
     }
 
     QSoftDevices softDevice(&serialPort);
+    QObject::connect(
+        &softDevice, &QSoftDevices::receivedEvent,
+        [](QByteArray bytes) { qDebug() << "QSoftDevices::receivedEvent" << bytes.toHex(); }
+    );
 
     QVarLengthArray<char> varLenArray{0x4c, 0x00};
-    softDevice.sendCommand(varLenArray);
-    softDevice.sendCommand({0x4c, 0x00});
+    softDevice.writeCommand(varLenArray);
+    softDevice.writeCommand({0x4c, 0x00});
     // NOTE: can't get events after invalid commands
-    //softDevice.sendCommand({0x4c}); // invalid command
-    //softDevice.sendCommand({0x4c, 0x00, 0x00}); // invalid command
-    //softDevice.sendCommand({0x4c, 0x00, 0x00, 0x00}); // invalid command
+    //softDevice.writeCommand({0x4c}); // invalid command
+    //softDevice.writeCommand({0x4c, 0x00, 0x00}); // invalid command
+    //softDevice.writeCommand({0x4c, 0x00, 0x00, 0x00}); // invalid command
 
     QByteArray byteArray(std::begin<char>({0x4c, 0x00}), 2);
-    softDevice.sendCommand({byteArray.begin(), byteArray.end()});
-    //softDevice.sendCommand(QVarLengthArray<char>(byteArray.begin(), byteArray.end()));
-    softDevice.sendCommand(&byteArray);
+    //softDevice.writeCommand({byteArray.begin(), byteArray.end()});
+    //softDevice.writeCommand(QVarLengthArray<char>(byteArray.begin(), byteArray.end()));
 
     //echo -e '\x06\x00\x00\x02\x03\x04\x05\x06' > /dev/ttyACM0
     //cmd: 0300 00 4c 00
     //evt: 0700 01 4c 00 00000000
     QByteArray command(std::begin<char>({0x4c, 0x00}), 2);
+    softDevice.write(command);
+    softDevice.write(command);
     softDevice.write(command);
 
     return a.exec();
