@@ -24,9 +24,9 @@ int main(int argc, char *argv[])
 
     QSoftDevices softDevice(&serialPort);
     QObject::connect(
-        &softDevice, &QSoftDevices::receivedEvent,
-        [&softDevice](qint64 bytes) {
-            QByteArray event = softDevice.read(bytes);
+        &softDevice, &QSoftDevices::readyRead,
+        [&softDevice]() {
+            QByteArray event = softDevice.read(softDevice.bytesAvailable());
             qDebug() << "QSoftDevices::receivedEvent" << event.toHex() << event.size();
         }
     );
@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
     //softDevice.writeCommand({0x4c, 0x00, 0x00, 0x00}); // invalid command
 
     QByteArray byteArray(std::begin<char>({0x4c, 0x00}), 2);
-    //softDevice.writeCommand({byteArray.begin(), byteArray.end()});
-    //softDevice.writeCommand(QVarLengthArray<char>(byteArray.begin(), byteArray.end()));
+    softDevice.writeCommand({byteArray.begin(), byteArray.end()});
+    softDevice.writeCommand(QVarLengthArray<char>(byteArray.begin(), byteArray.end()));
 
     //echo -e '\x06\x00\x00\x02\x03\x04\x05\x06' > /dev/ttyACM0
     //cmd: 0300 00 4c 00

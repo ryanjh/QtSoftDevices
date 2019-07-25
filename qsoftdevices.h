@@ -19,7 +19,6 @@ public:
     { writeData(bytes.constData(), bytes.size()); }
     //TODO: readEvent ?
 
-    const quint32 COMMANDSIZE = 3;
     const quint32 CMDOPCODE = 0;
     const quint32 EVTOPCODE = 1;
 
@@ -27,18 +26,8 @@ protected:
     qint64 readData(char *data, qint64 maxSize) override;
     qint64 writeData(const char *data, qint64 maxSize) override;
 
-signals:
-    void scheduleWrite(QRingBuffer *commands);
-    void receivedEvent(qint64 bytes);
-
-protected slots:
-    qint64 transmitCommands(QRingBuffer *commands);
-    qint64 receiveEvents(QRingBuffer *events);
-
 private:
     QIODevice *serialDevice = nullptr;
-    QRingBuffer commandBuffer;
-    QRingBuffer eventBuffer;
 };
 
 #endif // QSOFTDEVICES_H
