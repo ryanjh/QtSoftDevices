@@ -25,8 +25,22 @@ qint64 QSoftDevices::readData(char *data, qint64 maxSize)
 {
     Q_ASSERT(data);
     Q_ASSERT(serialDevice);
-    qint64 readSize = serialDevice->read(data, maxSize);
-    return readSize; // TODO: remove HCI
+    char event[] = {0x00, 0x00, 0x00};
+    if (serialDevice->peek(event, sizeof(event)) != sizeof(event))
+        return 0;
+
+    qint64 eventSize = event[0] + (event[1] << 8);
+    Q_ASSERT(event[2] == EVTOPCODE);
+    if (serialDevice->bytesAvailable() < eventSize + 2)
+        return 0;
+
+    qint64 readSize = eventSize - 1;
+    if (maxSize < readSize)
+        return 0;
+
+    Q_ASSERT(serialDevice->skip(sizeof(event)) == sizeof(event));
+    Q_ASSERT(serialDevice->read(data, readSize) == readSize);
+    return readSize;
 }
 
 /*!
