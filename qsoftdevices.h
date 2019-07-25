@@ -13,8 +13,6 @@ public:
     QSoftDevices(QIODevice *serialDevice, QObject *parent = nullptr);
     virtual ~QSoftDevices() {} // TODO: disconnect
 
-    qint64 readData(char *data, qint64 maxSize) override;
-    qint64 writeData(const char *data, qint64 maxSize) override;
     qint64 bytesAvailable() const override;
 
     inline void writeCommand(const QVarLengthArray<char> bytes)
@@ -22,17 +20,20 @@ public:
     //TODO: readEvent ?
 
     const quint32 COMMANDSIZE = 3;
+    const quint32 CMDOPCODE = 0;
+    const quint32 EVTOPCODE = 1;
 
 protected:
-    qint64 transmitCommands(QRingBuffer *commands);
-    qint64 receiveEvents(QRingBuffer *events);
+    qint64 readData(char *data, qint64 maxSize) override;
+    qint64 writeData(const char *data, qint64 maxSize) override;
 
 signals:
     void scheduleWrite(QRingBuffer *commands);
-    void receivedEvent(QByteArray bytes);
+    void receivedEvent(qint64 bytes);
 
-private slots:
-    void handleReadyRead();
+protected slots:
+    qint64 transmitCommands(QRingBuffer *commands);
+    qint64 receiveEvents(QRingBuffer *events);
 
 private:
     QIODevice *serialDevice = nullptr;

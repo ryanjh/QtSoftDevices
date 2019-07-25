@@ -4,15 +4,17 @@
 QSoftDevices::QSoftDevices(QIODevice *serialDevice, QObject *parent)
     : serialDevice(serialDevice)
 {
-    open(QIODevice::ReadWrite); //TODO: way to set mode
-    QObject::connect(serialDevice, &QIODevice::readyRead, this, &QSoftDevices::handleReadyRead);
+    // NOTE: QIODevice::Unbuffered is needed or softDevice.read(event, bytes)
+    // will read 16384. [qiodevice.cpp:1129]
+    open(QIODevice::ReadWrite | QIODevice::Unbuffered); //TODO: way to set mode
     QObject::connect( //TODO: remove debug only
         serialDevice, &QIODevice::bytesWritten,
         [](qint64 bytes) { qDebug() << "handleBytesWritten" << bytes; }
     );
+    QObject::connect(this, &QSoftDevices::scheduleWrite, &QSoftDevices::transmitCommands);
     QObject::connect(
-        this, &QSoftDevices::scheduleWrite,
-        [this](QRingBuffer *commands) { transmitCommands(commands);}
+        serialDevice, &QIODevice::readyRead,
+        [this]() { receiveEvents(&eventBuffer); }
     );
 }
 
@@ -23,7 +25,8 @@ qint64 QSoftDevices::readData(char *data, qint64 maxSize)
 {
     Q_ASSERT(data);
     Q_ASSERT(serialDevice);
-    return serialDevice->read(data, maxSize);
+    qint64 readSize = serialDevice->read(data, maxSize);
+    return readSize; // TODO: remove HCI
 }
 
 /*!
@@ -66,24 +69,22 @@ qint64 QSoftDevices::receiveEvents(QRingBuffer *events)
 {
     Q_ASSERT(events);
     Q_ASSERT(serialDevice);
-    if (serialDevice->bytesAvailable() >= COMMANDSIZE) {
-        // remove HCI
+
+    qint64 available = 0;
+    qint64 eventSize = 0;
+    char event[] = {0x00, 0x00, 0x00};
+    forever {
+        available = serialDevice->bytesAvailable();
+        //qDebug() << "receiveEvents(peek)" << serialDevice->peek(available).toHex() << available;
+        if (serialDevice->peek(event, sizeof(event)) != sizeof(event))
+            return 0;
+
+        qint64 eventSize = event[0] + (event[1] << 8) + 2;
+        if (available < eventSize || event[2] != EVTOPCODE)
+            return 0;
+
+        emit receivedEvent(eventSize);
     }
-    qDebug() << "receiveEvents";
 
     return 0;
-}
-
-void QSoftDevices::handleReadyRead()
-{
-    qDebug() << "handleReadyRead" << bytesAvailable();
-    // ----------------------------------------------------------
-    // TODO: better option
-    if (bytesAvailable() >= 3) {
-        // remove HCI
-    }
-    // ----------------------------------------------------------
-    QByteArray event = readAll();
-    //TODO: buffer event and emit receivedEvent
-    emit receivedEvent(event);
 }

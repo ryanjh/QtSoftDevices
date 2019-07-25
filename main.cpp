@@ -10,6 +10,7 @@ int main(int argc, char *argv[])
 
     QSerialPort serialPort;
     serialPort.setPortName("/dev/ttyACM0");
+    //serialPort.setPortName("COM10");
     serialPort.setBaudRate(QSerialPort::Baud115200);
     serialPort.setDataBits(QSerialPort::Data8);
     serialPort.setParity(QSerialPort::NoParity);
@@ -24,7 +25,10 @@ int main(int argc, char *argv[])
     QSoftDevices softDevice(&serialPort);
     QObject::connect(
         &softDevice, &QSoftDevices::receivedEvent,
-        [](QByteArray bytes) { qDebug() << "QSoftDevices::receivedEvent" << bytes.toHex(); }
+        [&softDevice](qint64 bytes) {
+            QByteArray event = softDevice.read(bytes);
+            qDebug() << "QSoftDevices::receivedEvent" << event.toHex() << event.size();
+        }
     );
 
     QVarLengthArray<char> varLenArray{0x4c, 0x00};
@@ -43,8 +47,6 @@ int main(int argc, char *argv[])
     //cmd: 0300 00 4c 00
     //evt: 0700 01 4c 00 00000000
     QByteArray command(std::begin<char>({0x4c, 0x00}), 2);
-    softDevice.write(command);
-    softDevice.write(command);
     softDevice.write(command);
 
     return a.exec();
