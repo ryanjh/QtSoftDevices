@@ -39,22 +39,6 @@ static adapter_t *m_adapter = NULL;
 #define APP_ERROR_CHECK(err_code)
 //TODO: nff_log.h
 #define NRF_LOG_INFO printf
-
-// ble_ipsp.c
-/**@brief IPSP Channel Information. */
-typedef struct
-{
-    uint16_t     conn_handle;                                                                       /**< Identifies the BLE link on which channel is established. BLE_CONN_HANDLE_INVALID if channel is unassigned. */
-    uint16_t     cid;                                                                               /**< L2CAP channel identifier needed to manage the channel once established. BLE_L2CAP_CID_INVALID if channel is unassigned. */
-    uint16_t     rx_buffer_status;                                                                  /**< Usage status of RX buffers. */
-    uint8_t      state;                                                                             /**< State information for the channel. See @ref channel_state_t for details. */
-    uint8_t    * p_rx_buffer;                                                                       /**< Receive buffer for the channel. */
-} channel_t;
-
-#define IPSP_MAX_CONNECTED_DEVICES    BLE_IPSP_MAX_CHANNELS                                         /**< Table for maximum number of connected devices the module will keep track of. */
-
-static ble_ipsp_evt_handler_t m_evt_handler = NULL;                                                 /**< Asynchronous event notification callback registered with the module. */
-static channel_t              m_channel[BLE_IPSP_MAX_CHANNELS];                                     /**< Table of channels managed by the module. */
 // ==============================================================================
 
 #define APP_IPSP_TAG                        35                                                      /**< Identifier for L2CAP configuration with the softdevice. */
@@ -458,120 +442,6 @@ static uint32_t ble_stack_init(void)
 }
 
 
-/**@brief Initialize channel.
- *
- * @param[in] ch_id Identifies the IPSP channel on which the procedure is requested.
- */
-static __INLINE void channel_init(uint8_t ch_id)
-{
-#if 0
-    //TODO: ble_ipsp.c
-    m_channel[ch_id].conn_handle      = BLE_CONN_HANDLE_INVALID;
-    m_channel[ch_id].cid              = BLE_L2CAP_CID_INVALID;
-    m_channel[ch_id].rx_buffer_status = 0;
-    m_channel[ch_id].state            = CHANNEL_IDLE;
-    m_channel[ch_id].p_rx_buffer      = &m_rx_buffer[ch_id*RX_BUFFER_TOTAL_SIZE];
-#endif
-}
-
-
-/**@brief Initialize the peer connected device in the list.
- *
- * @param[in] index Identifies the list element to be initialized.
- */
-static __INLINE void connected_device_init(uint32_t index)
-{
-#if 0
-    //TODO: ble_ipsp.c
-    memset (&m_connected_device[index].ble_addr, 0, sizeof(ble_gap_addr_t));
-    m_connected_device[index].conn_handle = BLE_CONN_HANDLE_INVALID;
-    m_connected_device[index].response    = INCOMING_CHANNEL_ACCEPT;
-#endif
-}
-
-
-uint32_t ble_ipsp_init(const ble_ipsp_init_t * p_init)
-{
-    ble_uuid_t    ble_uuid;
-    uint32_t      err_code;
-    uint16_t      handle;
-
-    if (p_init == nullptr) return NRF_ERROR_NULL;
-    if (p_init->evt_handler == nullptr) return NRF_ERROR_NULL;
-
-    // Add service to indicate IPSP support.
-    BLE_UUID_BLE_ASSIGN(ble_uuid, BLE_UUID_IPSP_SERVICE);
-
-    err_code = sd_ble_gatts_service_add(m_adapter, BLE_GATTS_SRVC_TYPE_PRIMARY, &ble_uuid, &handle);
-    if (err_code != NRF_SUCCESS)
-    {
-        return err_code;
-    }
-
-    m_evt_handler = p_init->evt_handler;
-
-    // Initialize the channel.
-    for (int i = 0; i < BLE_IPSP_MAX_CHANNELS; i++)
-    {
-        channel_init(i);
-    }
-
-    // Initialize the connected peer device table.
-    for (int i = 0; i < IPSP_MAX_CONNECTED_DEVICES; i++)
-    {
-        connected_device_init(i);
-    }
-
-    return NRF_SUCCESS;
-}
-
-uint32_t ble_ipsp_send(ble_ipsp_handle_t const * p_handle,
-                       uint8_t const           * p_data,
-                       uint16_t                  data_len)
-{
-#if 0
-//TODO: ble_ipsp.c
-    BLE_IPSP_ENTRY();
-
-    VERIFY_MODULE_IS_INITIALIZED();
-    NULL_PARAM_CHECK(p_handle);
-    NULL_PARAM_CHECK(p_data);
-    VERIFY_CON_HANDLE(p_handle->conn_handle);
-
-    uint32_t err_code;
-    uint8_t  ch_id;
-
-    BLE_IPSP_MUTEX_LOCK();
-
-    err_code = channel_search(p_handle->conn_handle, p_handle->cid, &ch_id);
-
-    if (err_code == NRF_SUCCESS)
-    {
-        const ble_data_t p_sdu_buf =
-        {
-            .p_data = (uint8_t *)p_data,
-            .len    = data_len
-        };
-
-        BLE_IPSP_TRC("p_sdu_buf = %p, p_sdu_buf.p_data = %p",
-                 &p_sdu_buf, p_data);
-
-        err_code = sd_ble_l2cap_ch_tx(p_handle->conn_handle,
-                                      p_handle->cid,
-                                      &p_sdu_buf);
-    }
-
-    BLE_IPSP_MUTEX_UNLOCK();
-
-    BLE_IPSP_EXIT_WITH_RESULT(err_code);
-
-    return err_code;
-#else
-    return NRF_SUCCESS;
-#endif
-}
-
-
 static void services_init()
 {
     ble_ipsp_init_t init_param;
@@ -708,70 +578,8 @@ static void ble_evt_dispatch(adapter_t * adapter, ble_evt_t * p_ble_evt)
         return;
     }
 
-    switch (p_ble_evt->header.evt_id)
-    {
-#if 0
-//TODO: unimplemented
-        case BLE_GAP_EVT_CONNECTED:
-            on_connected(&(p_ble_evt->evt.gap_evt));
-            break;
-
-        case BLE_GAP_EVT_DISCONNECTED:
-            printf("Disconnected, reason: 0x%02X\n",
-                   p_ble_evt->evt.gap_evt.params.disconnected.reason);
-            fflush(stdout);
-            m_connected_devices--;
-            m_connection_handle = 0;
-            break;
-
-        case BLE_GAP_EVT_ADV_REPORT:
-            on_adv_report(&(p_ble_evt->evt.gap_evt));
-            break;
-
-        case BLE_GAP_EVT_TIMEOUT:
-            on_timeout(&(p_ble_evt->evt.gap_evt));
-            break;
-
-        case BLE_GATTC_EVT_PRIM_SRVC_DISC_RSP:
-            on_service_discovery_response(&(p_ble_evt->evt.gattc_evt));
-            break;
-
-        case BLE_GATTC_EVT_CHAR_DISC_RSP:
-            on_characteristic_discovery_response(&(p_ble_evt->evt.gattc_evt));
-            break;
-
-        case BLE_GATTC_EVT_DESC_DISC_RSP:
-            on_descriptor_discovery_response(&(p_ble_evt->evt.gattc_evt));
-            break;
-
-        case BLE_GATTC_EVT_WRITE_RSP:
-            on_write_response(&(p_ble_evt->evt.gattc_evt));
-            break;
-
-        case BLE_GATTC_EVT_HVX:
-            on_hvx(&(p_ble_evt->evt.gattc_evt));
-            break;
-
-        case BLE_GAP_EVT_CONN_PARAM_UPDATE_REQUEST:
-            on_conn_params_update_request(&(p_ble_evt->evt.gap_evt));
-            break;
-
-    #if NRF_SD_BLE_API >= 3
-        case BLE_GATTS_EVT_EXCHANGE_MTU_REQUEST:
-            on_exchange_mtu_request(&(p_ble_evt->evt.gatts_evt));
-            break;
-
-        case BLE_GATTC_EVT_EXCHANGE_MTU_RSP:
-            on_exchange_mtu_response(&(p_ble_evt->evt.gattc_evt));
-            break;
-    #endif
-#endif
-
-        default:
-            printf("Received an un-handled event with ID: %d\n", p_ble_evt->header.evt_id);
-            fflush(stdout);
-            break;
-    }
+    ble_ipsp_evt_handler(p_ble_evt);
+    on_ble_evt(p_ble_evt);
 }
 
 int main(int argc, char *argv[])

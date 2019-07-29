@@ -33,6 +33,7 @@ INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/common/internal
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/common/internal/transport
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/sd_api_v6
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/src/sd_api_common/sdk/components/libraries/util
+INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/src/sd_api_common/sdk/components/ble_services/ble_ipsp
 
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common/config
