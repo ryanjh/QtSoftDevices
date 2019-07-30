@@ -36,7 +36,7 @@ static adapter_t *m_adapter = NULL;
 
 // ==============================================================================
 //TODO: app_error.h
-#define APP_ERROR_CHECK(err_code)
+#define APP_ERROR_CHECK(err_code) {if (err_code !=  NRF_SUCCESS) printf("APP_ERROR_CHECK:%d (%d)\n", __LINE__, err_code); }
 //TODO: nff_log.h
 #define NRF_LOG_INFO printf
 // ==============================================================================
@@ -121,109 +121,6 @@ static void leds_init(void)
     //TODO: LEDS_OFF((SCANNING_LED | CONNECTED_LED));
 }
 
-/**@brief Function for handling button events.
- *
- * @param[in]   pin_no         The pin number of the button pressed.
- * @param[in]   button_action  The action performed on button.
- */
-static void button_event_handler(uint8_t pin_no, uint8_t button_action)
-{
-    uint32_t err_code;
-#if 0
-    //TODO: button
-    if (button_action == APP_BUTTON_PUSH)
-    {
-        switch (pin_no)
-        {
-            case BSP_BUTTON_0:
-            {
-                if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
-                {
-                    err_code = sd_ble_gap_connect(&m_peer_addr,
-                                                  &m_scan_param,
-                                                  &m_connection_param,
-                                                  APP_IPSP_TAG);
-
-                    if (err_code != NRF_SUCCESS)
-                    {
-                        APPL_LOG("Connection Request Failed, reason 0x%08lX", err_code);
-                    }
-                    APP_ERROR_CHECK(err_code);
-                }
-                else
-                {
-                     APPL_LOG("Connection exists with peer");
-                }
-
-                break;
-            }
-            case BSP_BUTTON_1:
-            {
-                if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
-                {
-                    ble_ipsp_handle_t ipsp_handle;
-                    ipsp_handle.conn_handle = m_conn_handle;
-                    err_code = ble_ipsp_connect(&ipsp_handle);
-                    APP_ERROR_CHECK_BOOL((err_code == NRF_SUCCESS) ||
-                                         (err_code == NRF_ERROR_BLE_IPSP_CHANNEL_ALREADY_EXISTS));
-                }
-                else
-                {
-                     APPL_LOG("No physical link exists with peer");
-                }
-                break;
-            }
-            case BSP_BUTTON_2:
-            {
-                err_code = ble_ipsp_disconnect(&m_handle);
-                APPL_LOG("ble_ipsp_disconnect result %08lX", err_code);
-                break;
-            }
-            case BSP_BUTTON_3:
-            {
-                if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
-                {
-                    err_code = sd_ble_gap_disconnect(m_conn_handle, 0x13);
-                    APPL_LOG("sd_ble_gap_disconnect result %08lX", err_code);
-                }
-                else
-                {
-                    APPL_LOG("No physical link exists with peer");
-                }
-                break;
-            }
-            default:
-                break;
-        }
-    }
-#endif
-}
-
-
-/**@brief Function for the Button initialization.
- *
- * @details Initializes all Buttons used by this application.
- */
-static void buttons_init(void)
-{
-    uint32_t err_code;
-#if 0
-    //TODO: button
-    static app_button_cfg_t buttons[] =
-    {
-        {BSP_BUTTON_0, false, BUTTON_PULL, button_event_handler},
-        {BSP_BUTTON_1, false, BUTTON_PULL, button_event_handler},
-        {BSP_BUTTON_2, false, BUTTON_PULL, button_event_handler},
-        {BSP_BUTTON_3, false, BUTTON_PULL, button_event_handler}
-    };
-
-    err_code = app_button_init(buttons, ARRAY_SIZE(buttons), BUTTON_DETECTION_DELAY);
-    APP_ERROR_CHECK(err_code);
-
-    err_code = app_button_enable();
-    APP_ERROR_CHECK(err_code);
-#endif
-}
 
 /**@brief Function for the Timer initialization.
  *
@@ -246,6 +143,7 @@ static void timers_init(void)
  */
 static void on_ble_evt(ble_evt_t const * p_ble_evt)
 {
+    printf("on_ble_evt\n");
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
@@ -447,7 +345,7 @@ static void services_init()
     ble_ipsp_init_t init_param;
     init_param.evt_handler = app_ipsp_event_handler;
 
-    uint32_t err_code = ble_ipsp_init(&init_param);
+    uint32_t err_code = ble_ipsp_init(m_adapter, &init_param);
     APP_ERROR_CHECK(err_code);
 
     ble_gap_addr_t m_my_addr;
@@ -461,6 +359,9 @@ static void services_init()
     m_my_addr.addr_type = BLE_GAP_ADDR_TYPE_PUBLIC;
 
     err_code = sd_ble_gap_addr_set(m_adapter, &m_my_addr);
+    if (err_code !=  NRF_SUCCESS)
+    {
+    }
     APP_ERROR_CHECK(err_code);
 }
 
@@ -571,6 +472,7 @@ static adapter_t * adapter_init(char * serial_port, uint32_t baud_rate)
  */
 static void ble_evt_dispatch(adapter_t * adapter, ble_evt_t * p_ble_evt)
 {
+    printf("ble_evt_dispatch\n");
     if (p_ble_evt == NULL)
     {
         printf("Received an empty BLE event\n");
@@ -611,7 +513,6 @@ int main(int argc, char *argv[])
     }
 
     //TODO: timers_init();
-    //TODO: buttons_init();
     //TODO: leds_init();
     //TODO: power_management_init();
 
@@ -632,6 +533,36 @@ int main(int argc, char *argv[])
     //}
 
 //============================================================================================================================================
+
+    uint32_t err_code;
+    if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
+    {
+        err_code = sd_ble_gap_connect(m_adapter, &m_peer_addr, &m_scan_param, &m_connection_param, APP_IPSP_TAG);
+
+        if (err_code != NRF_SUCCESS)
+        {
+            APPL_LOG("Connection Request Failed, reason 0x%08lX", err_code);
+        }
+        APP_ERROR_CHECK(err_code);
+    }
+    else
+    {
+        APPL_LOG("Connection exists with peer");
+    }
+
+    // if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
+    // {
+    //     ble_ipsp_handle_t ipsp_handle;
+    //     ipsp_handle.conn_handle = m_conn_handle;
+    //     err_code = ble_ipsp_connect(&ipsp_handle);
+    //     if ((err_code == NRF_SUCCESS) || (err_code == NRF_ERROR_BLE_IPSP_CHANNEL_ALREADY_EXISTS))
+    //         APPL_LOG("ble_ipsp_connect fail");
+    // }
+    // else
+    // {
+    //     APPL_LOG("No physical link exists with peer");
+    // }
+
 #if 0
     QSerialPort serialPort;
     serialPort.setPortName("/dev/ttyACM0");

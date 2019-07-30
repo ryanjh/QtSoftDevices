@@ -21,10 +21,13 @@ DEFINES += SD_RPC_EXPORTS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += main.cpp \
-    qsoftdevices.cpp
+    qsoftdevices.cpp \
+    ble_ipsp.cpp
 libnrf-ble-driver-sd_api_v6.so.0.0.0
 HEADERS += \
-    qsoftdevices.h
+    qsoftdevices.h \
+    ble_ipsp.h \
+    ble_srv_common.h
 
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/common
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/common/config
@@ -33,7 +36,6 @@ INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/common/internal
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/common/internal/transport
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/include/sd_api_v6
 INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/src/sd_api_common/sdk/components/libraries/util
-INCLUDEPATH += $$PWD/../Nordic/pc-ble-driver/src/sd_api_common/sdk/components/ble_services/ble_ipsp
 
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common/config
@@ -41,6 +43,7 @@ DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common/sdk_compat
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common/internal
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/common/internal/transport
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/sd_api_v6
+DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/src/sd_api_common/sdk/components/libraries/util
 
 
 unix:!macx: LIBS += -L/home/rychu/rychu_home/workspace/Nordic/pc-ble-driver/build/ -lnrf-ble-driver-sd_api_v6
