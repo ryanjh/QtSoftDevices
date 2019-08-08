@@ -37,8 +37,8 @@ static adapter_t *m_adapter = NULL;
 // ==============================================================================
 //TODO: app_error.h
 #define APP_ERROR_CHECK(err_code) {if (err_code !=  NRF_SUCCESS) printf("APP_ERROR_CHECK:%d (%d)\n", __LINE__, err_code); }
-//TODO: nff_log.h
-#define NRF_LOG_INFO printf
+//TODO: nrf_log.h
+#define NRF_LOG_INFO qDebug
 // ==============================================================================
 
 #define APP_IPSP_TAG                        35                                                      /**< Identifier for L2CAP configuration with the softdevice. */
@@ -143,7 +143,6 @@ static void timers_init(void)
  */
 static void on_ble_evt(ble_evt_t const * p_ble_evt)
 {
-    printf("on_ble_evt\n");
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
@@ -152,6 +151,21 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt)
 
             //TODO: LEDS_ON(CONNECTED_LED);
             //TODO: LEDS_OFF(SCANNING_LED);
+
+            if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
+            {
+                ble_ipsp_handle_t ipsp_handle;
+                ipsp_handle.conn_handle = m_conn_handle;
+                uint32_t err_code = ble_ipsp_connect(m_adapter, &ipsp_handle);
+                if (err_code != NRF_SUCCESS
+                    && err_code != NRF_ERROR_BLE_IPSP_CHANNEL_ALREADY_EXISTS) {
+                    APPL_LOG("ble_ipsp_connect fail %x", err_code);
+                }
+            }
+            else
+            {
+                APPL_LOG("No physical link exists with peer");
+            }
 
             break;
         case BLE_GAP_EVT_DISCONNECTED:
@@ -256,7 +270,7 @@ static uint32_t app_ipsp_event_handler(ble_ipsp_handle_t const * p_handle,
 static uint32_t ble_stack_init(void)
 {
     uint32_t     ram_start = 0; // Value is not used by ble-driver
-    uint32_t     err_code;
+    uint32_t     err_code = NRF_SUCCESS;
     ble_cfg_t    ble_cfg;
 
     // Configure the maximum number of connections.
@@ -321,7 +335,6 @@ static uint32_t ble_stack_init(void)
     if (err_code ==  NRF_SUCCESS)
     {
         err_code = sd_ble_enable(m_adapter, &ram_start);
-
         switch (err_code) {
             case NRF_SUCCESS:
                 break;
@@ -335,7 +348,6 @@ static uint32_t ble_stack_init(void)
                 break;
         }
     }
-
     return err_code;
 }
 
@@ -359,9 +371,6 @@ static void services_init()
     m_my_addr.addr_type = BLE_GAP_ADDR_TYPE_PUBLIC;
 
     err_code = sd_ble_gap_addr_set(m_adapter, &m_my_addr);
-    if (err_code !=  NRF_SUCCESS)
-    {
-    }
     APP_ERROR_CHECK(err_code);
 }
 
@@ -472,7 +481,6 @@ static adapter_t * adapter_init(char * serial_port, uint32_t baud_rate)
  */
 static void ble_evt_dispatch(adapter_t * adapter, ble_evt_t * p_ble_evt)
 {
-    printf("ble_evt_dispatch\n");
     if (p_ble_evt == NULL)
     {
         printf("Received an empty BLE event\n");
@@ -487,6 +495,7 @@ static void ble_evt_dispatch(adapter_t * adapter, ble_evt_t * p_ble_evt)
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+#if 1
 //============================================================================================================================================
     uint32_t error_code;
     char *   serial_port = DEFAULT_UART_PORT_NAME;
@@ -517,9 +526,9 @@ int main(int argc, char *argv[])
     //TODO: power_management_init();
 
     error_code = ble_stack_init();
-
     if (error_code != NRF_SUCCESS)
     {
+        printf("Failed to init BLE stack. Error code: 0x%02X\n", error_code);
         return error_code;
     }
 
@@ -537,8 +546,8 @@ int main(int argc, char *argv[])
     uint32_t err_code;
     if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
     {
-        err_code = sd_ble_gap_connect(m_adapter, &m_peer_addr, &m_scan_param, &m_connection_param, APP_IPSP_TAG);
-
+        err_code = sd_ble_gap_connect(m_adapter, &m_peer_addr,
+                                      &m_scan_param, &m_connection_param, APP_IPSP_TAG);
         if (err_code != NRF_SUCCESS)
         {
             APPL_LOG("Connection Request Failed, reason 0x%08lX", err_code);
@@ -550,20 +559,7 @@ int main(int argc, char *argv[])
         APPL_LOG("Connection exists with peer");
     }
 
-    // if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
-    // {
-    //     ble_ipsp_handle_t ipsp_handle;
-    //     ipsp_handle.conn_handle = m_conn_handle;
-    //     err_code = ble_ipsp_connect(&ipsp_handle);
-    //     if ((err_code == NRF_SUCCESS) || (err_code == NRF_ERROR_BLE_IPSP_CHANNEL_ALREADY_EXISTS))
-    //         APPL_LOG("ble_ipsp_connect fail");
-    // }
-    // else
-    // {
-    //     APPL_LOG("No physical link exists with peer");
-    // }
-
-#if 0
+#else
     QSerialPort serialPort;
     serialPort.setPortName("/dev/ttyACM0");
     //serialPort.setPortName("COM10");

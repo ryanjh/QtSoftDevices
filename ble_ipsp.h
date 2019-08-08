@@ -10,7 +10,6 @@ public:
 
 // ================================================================================================
 //TODO: sdk_errors.h
-
 #define NRF_ERROR_BLE_IPSP_ERR_BASE         (0x8400)    /**< Base address for BLE IPSP related errors. */
 
 /**
@@ -158,7 +157,7 @@ uint32_t ble_ipsp_init(adapter_t *m_adapter, ble_ipsp_init_t const * p_init);
  * @retval NRF_SUCCESS If initialization of the service was successful, else,
  *                     an error code indicating reason for failure.
  */
-uint32_t ble_ipsp_connect(ble_ipsp_handle_t const * p_handle);
+uint32_t ble_ipsp_connect(adapter_t *m_adapter, ble_ipsp_handle_t const * p_handle);
 
 
 /**@brief Function for sending IP data to peer.

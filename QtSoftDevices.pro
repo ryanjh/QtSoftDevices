@@ -10,7 +10,8 @@ CONFIG -= app_bundle
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
 
-DEFINES += NRF_SD_BLE_API=6
+DEFINES += "NRF_SD_BLE_API=6"
+DEFINES += "NRF_SD_BLE_API_VERSION=6"
 DEFINES += ASIO_STANDALONE
 DEFINES += HCI_LINK_CONTROL
 DEFINES += SD_RPC_EXPORTS
@@ -46,7 +47,7 @@ DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/include/sd_api_v6
 DEPENDPATH += $$PWD/../Nordic/pc-ble-driver/src/sd_api_common/sdk/components/libraries/util
 
 
-unix:!macx: LIBS += -L/home/rychu/rychu_home/workspace/Nordic/pc-ble-driver/build/ -lnrf-ble-driver-sd_api_v6
+unix:!macx: LIBS += -L/home/rychu/rychu_home/workspace/Nordic/pc-ble-driver/build-l2cap/ -lnrf-ble-driver-sd_api_v6
 
 INCLUDEPATH += $$PWD/.
 DEPENDPATH += $$PWD/.
