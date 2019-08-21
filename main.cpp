@@ -152,8 +152,7 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt)
             //TODO: LEDS_ON(CONNECTED_LED);
             //TODO: LEDS_OFF(SCANNING_LED);
 
-            if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
-            {
+            if (m_conn_handle != BLE_CONN_HANDLE_INVALID) {
                 ble_ipsp_handle_t ipsp_handle;
                 ipsp_handle.conn_handle = m_conn_handle;
                 uint32_t err_code = ble_ipsp_connect(m_adapter, &ipsp_handle);
@@ -162,11 +161,9 @@ static void on_ble_evt(ble_evt_t const * p_ble_evt)
                     APPL_LOG("ble_ipsp_connect fail %x", err_code);
                 }
             }
-            else
-            {
+            else {
                 APPL_LOG("No physical link exists with peer");
             }
-
             break;
         case BLE_GAP_EVT_DISCONNECTED:
             APPL_LOG("Disconnected.");
@@ -206,52 +203,53 @@ static uint32_t app_ipsp_event_handler(ble_ipsp_handle_t const * p_handle,
                      "0x%08lX", p_handle->conn_handle, p_handle->cid, p_evt->evt_result);
             break;
         }
-        case BLE_IPSP_EVT_CHANNEL_DATA_RX:
-        {
-            const uint16_t received_sdu_length = MIN(p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_buf.len,
-                                                     p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_len);
+        // case BLE_IPSP_EVT_CHANNEL_DATA_RX:
+        // {
+        //     const uint16_t received_sdu_length = MIN(p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_buf.len,
+        //                                              p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_len);
 
-            APPL_LOG("[0x%04X]:[0x%04X] BLE_IPSP_EVT_CHANNEL_DATA_RX Event. Result 0x%08lX,"
-                     " Data Length 0x%04X", p_handle->conn_handle, p_handle->cid,
-                     p_evt->evt_result,  p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_buf.len);
+        //     APPL_LOG("[0x%04X]:[0x%04X] BLE_IPSP_EVT_CHANNEL_DATA_RX Event. Result 0x%08lX,"
+        //              " Data Length 0x%04X", p_handle->conn_handle, p_handle->cid,
+        //              p_evt->evt_result,  p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_buf.len);
 
-            //uint8_t * p_send_buffer = nrf_malloc(received_sdu_length);
-            uint8_t * p_send_buffer = (uint8_t*) malloc(received_sdu_length);
+        //     //uint8_t * p_send_buffer = nrf_malloc(received_sdu_length);
+        //     uint8_t * p_send_buffer = (uint8_t*) malloc(received_sdu_length);
 
-            if (p_send_buffer != NULL)
-            {
-                // Make a copy of the buffer as this buffer is recycled once the callback returns.
-                // ble_ipsp_send requires the memory to be resident until the event
-                // BLE_IPSP_EVT_CHANNEL_DATA_TX_COMPLETE is notified with the buffer.
-                memcpy (p_send_buffer,
-                        p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_buf.p_data,
-                        received_sdu_length);
+        //     if (p_send_buffer != NULL)
+        //     {
+        //         // Make a copy of the buffer as this buffer is recycled once the callback returns.
+        //         // ble_ipsp_send requires the memory to be resident until the event
+        //         // BLE_IPSP_EVT_CHANNEL_DATA_TX_COMPLETE is notified with the buffer.
+        //         memcpy (p_send_buffer,
+        //                 p_evt->p_evt_param->p_l2cap_evt->params.rx.sdu_buf.p_data,
+        //                 received_sdu_length);
 
-                //Echo back the data received.
-                uint32_t err_code = ble_ipsp_send(p_handle,
-                                                  p_send_buffer,
-                                                  received_sdu_length);
+        //         //Echo back the data received.
+        //         uint32_t err_code = ble_ipsp_send(m_adapter,
+        //                                           p_handle,
+        //                                           p_send_buffer,
+        //                                           received_sdu_length);
 
-                APPL_LOG("[0x%04X]:[0x%04X]:[%p] Echo data back. Result %08lX",
-                         p_handle->conn_handle, p_handle->cid, p_send_buffer, err_code);
-            }
-            else
-            {
-                 APPL_LOG("[0x%04X]:[0x%04X] No memory to echo data back.",
-                          p_handle->conn_handle, p_handle->cid);
-            }
+        //         APPL_LOG("[0x%04X]:[0x%04X]:[%p] Echo data back. Result %08lX",
+        //                  p_handle->conn_handle, p_handle->cid, p_send_buffer, err_code);
+        //     }
+        //     else
+        //     {
+        //          APPL_LOG("[0x%04X]:[0x%04X] No memory to echo data back.",
+        //                   p_handle->conn_handle, p_handle->cid);
+        //     }
 
-            break;
-        }
-        case BLE_IPSP_EVT_CHANNEL_DATA_TX_COMPLETE:
-        {
-            APPL_LOG ("[0x%04X]:[0x%04X]:[%p] BLE_IPSP_EVT_CHANNEL_DATA_TX_COMPLETE Event."
-                      "Result 0x%08lX\r\n", p_handle->conn_handle, p_handle->cid,
-                      p_evt->p_evt_param->p_l2cap_evt->params.tx.sdu_buf.p_data, p_evt->evt_result);
-            //nrf_free(p_evt->p_evt_param->p_l2cap_evt->params.tx.sdu_buf.p_data);
-            free(p_evt->p_evt_param->p_l2cap_evt->params.tx.sdu_buf.p_data);
-            break;
-        }
+        //     break;
+        // }
+        // case BLE_IPSP_EVT_CHANNEL_DATA_TX_COMPLETE:
+        // {
+        //     APPL_LOG ("[0x%04X]:[0x%04X]:[%p] BLE_IPSP_EVT_CHANNEL_DATA_TX_COMPLETE Event."
+        //               "Result 0x%08lX\r\n", p_handle->conn_handle, p_handle->cid,
+        //               p_evt->p_evt_param->p_l2cap_evt->params.tx.sdu_buf.p_data, p_evt->evt_result);
+        //     //nrf_free(p_evt->p_evt_param->p_l2cap_evt->params.tx.sdu_buf.p_data);
+        //     free(p_evt->p_evt_param->p_l2cap_evt->params.tx.sdu_buf.p_data);
+        //     break;
+        // }
         default:
         {
             APPL_LOG("[0x%04X]:[0x%04X] Unknown Event 0x%04X. Result 0x%08lX",
@@ -574,32 +572,91 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    int index = 1;
+
     QSoftDevices softDevice(&serialPort);
     QObject::connect(
         &softDevice, &QSoftDevices::readyRead,
-        [&softDevice]() {
+        [&softDevice, &index]() {
             QByteArray event = softDevice.read(softDevice.bytesAvailable());
             qDebug() << "QSoftDevices::receivedEvent" << event.toHex() << event.size();
+            qDebug() << "index" << index;
+            switch(++index) {
+                case 1:
+                    // SerializationTransport::send[69,40,0,0,0,1,0,1,0,0,0,]
+                    // decode_function rx_buffer->size:5 [69,0,0,0,0,]
+                    softDevice.writeCommand({0x69,0x40,0,0,0,1,0,1,0,0,0});
+                    break;
+                case 2:
+                    // SerializationTransport::send[69,20,0,0,0,1,23,1,3,0,]
+                    // decode_function rx_buffer->size:5 [69,0,0,0,0,
+                    softDevice.writeCommand({0x69,0x20,0,0,0,0x1,0x23,0x1,0x3,0});
+                    break;
+                case 3:
+                    // SerializationTransport::send[69,1,0,0,0,1,0,]
+                    // decode_function rx_buffer->size:5 [69,0,0,0,0,]
+                    softDevice.writeCommand({0x69,1,0,0,0,1,0});
+                    break;
+                case 4:
+                    // SerializationTransport::send[69,24,0,0,0,1,32,0,d4,0,4,1,1,]
+                    // decode_function rx_buffer->size:5 [69,0,0,0,0,]
+                    softDevice.writeCommand({0x69,0x24,0,0,0,1,0x32,0,char(0xd4),0,4,1,1});
+                    break;
+                case 5:
+                    // SerializationTransport::send[69,a1,0,0,0,1,0,1,0,0,]
+                    // decode_function rx_buffer->size:5 [69,0,0,0,0,]
+                    softDevice.writeCommand({0x69,char(0xa1),0,0,0,1,0,1,0,0});
+                    break;
+                case 6:
+                    // SerializationTransport::send[60,]
+                    // decode_function rx_buffer->size:5 [60,0,0,0,0,]
+                    softDevice.writeCommand({0x60});
+                    break;
+                case 7:
+                    // SerializationTransport::send[a8,1,1,20,18,1,1,]
+                    // decode_function rx_buffer->size:8 [a8,0,0,0,0,1,e,0,]
+                    softDevice.writeCommand({char(0xa8),1,1,0x20,0x18,1,1});
+                    break;
+                case 8:
+                    // SerializationTransport::send[6c,1,0,55,44,33,22,11,0,]
+                    // decode_function rx_buffer->size:5 [6c,0,0,0,0,]
+                    softDevice.writeCommand({0x6c,1,0,0x55,0x44,0x33,0x22,0x11,0});
+                    break;
+                case 9:
+                    // SerializationTransport::send[8c,1,0,aa,bb,cc,dd,ee,0,1,0,0,1,0,0,0,0,0,a0,0,50,0,0,0,1,18,0,30,0,0,0,90,1,23,]
+                    // decode_function rx_buffer->size:5 [8c,0,0,0,0,]
+                    softDevice.writeCommand({char(0x8c),1,0,char(0xaa),char(0xbb),char(0xcc),char(0xdd),char(0xee),0,1,0,0,1,0,0,0,0,0,char(0xa0),0,0x50,0,0,0,1,0x18,0,0x30,0,0,0,char(0x90),1,0x23});
+                    break;
+                default:
+                    // SerializationTransport::send[b8,0,0,1,0,0,1,0,5,32,0,0,0,0,0,0,0,23,0,0,0,]
+                    // decode_function rx_buffer->size:5 [b8,13,0,0,0,]
+                    if (event.size() > 30)
+                        softDevice.writeCommand({char(0xb8),0,0,1,0,0,1,0,5,0x32,0,0,0,0,0,0,0,0x23,0,0,0});
+                    break;
+            }
         }
     );
 
-    QVarLengthArray<char> varLenArray{0x4c, 0x00};
-    softDevice.writeCommand(varLenArray);
-    softDevice.writeCommand({0x4c, 0x00});
-    // NOTE: can't get events after invalid commands
-    //softDevice.writeCommand({0x4c}); // invalid command
-    //softDevice.writeCommand({0x4c, 0x00, 0x00}); // invalid command
-    //softDevice.writeCommand({0x4c, 0x00, 0x00, 0x00}); // invalid command
+    // QVarLengthArray<char> varLenArray{0x4c, 0x00};
+    // softDevice.writeCommand(varLenArray);
+    // softDevice.writeCommand({0x4c, 0x00});
+    // // NOTE: can't get events after invalid commands
+    // //softDevice.writeCommand({0x4c}); // invalid command
+    // //softDevice.writeCommand({0x4c, 0x00, 0x00}); // invalid command
+    // //softDevice.writeCommand({0x4c, 0x00, 0x00, 0x00}); // invalid command
 
-    QByteArray byteArray(std::begin<char>({0x4c, 0x00}), 2);
-    softDevice.writeCommand({byteArray.begin(), byteArray.end()});
-    softDevice.writeCommand(QVarLengthArray<char>(byteArray.begin(), byteArray.end()));
+    // QByteArray byteArray(std::begin<char>({0x4c, 0x00}), 2);
+    // softDevice.writeCommand({byteArray.begin(), byteArray.end()});
+    // softDevice.writeCommand(QVarLengthArray<char>(byteArray.begin(), byteArray.end()));
 
-    //echo -e '\x06\x00\x00\x02\x03\x04\x05\x06' > /dev/ttyACM0
-    //cmd: 0300 00 4c 00
-    //evt: 0700 01 4c 00 00000000
-    QByteArray command(std::begin<char>({0x4c, 0x00}), 2);
-    softDevice.write(command);
+    // //echo -e '\x06\x00\x00\x02\x03\x04\x05\x06' > /dev/ttyACM0
+    // //cmd: 0300 00 4c 00
+    // //evt: 0700 01 4c 00 00000000
+    // QByteArray command(std::begin<char>({0x4c, 0x00}), 2);
+    // softDevice.write(command);
+
+    softDevice.writeCommand({0x69,0x40,0,0,0,1,0,1,0,0,0});
+
 #endif
     qDebug() << "QtSoftDevice Run";
     return a.exec();

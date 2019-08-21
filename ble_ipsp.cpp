@@ -192,11 +192,75 @@ void ble_ipsp_evt_handler(ble_evt_t const * p_evt)
         case BLE_L2CAP_EVT_CH_SETUP:
         {
             printf("Received BLE Event BLE_L2CAP_EVT_CH_SETUP\n");
+            // This event is generated for both initiator and acceptor roles.
+            // This event indicates that the IPSP channel is successfully established.
+            retval = channel_search(p_evt->evt.l2cap_evt.conn_handle,
+                                    p_evt->evt.l2cap_evt.local_cid,
+                                    &ch_id);
+
+            if (retval != NRF_SUCCESS)
+            {
+                BLE_IPSP_TRC("Reply on unknown channel, dropping the event.");
+            }
+            else
+            {
+                if (m_channel[ch_id].state == CHANNEL_CONNECTING)
+                {
+                    // Channel created successfully.
+
+                    // Initialize IPSP handle.
+                    handle.conn_handle = p_evt->evt.l2cap_evt.conn_handle;
+                    handle.cid         = p_evt->evt.l2cap_evt.local_cid;
+
+                    // Initialize the event.
+                    ipsp_event.evt_id     = BLE_IPSP_EVT_CHANNEL_CONNECTED;
+                    ipsp_event.evt_result = NRF_SUCCESS;
+
+                    // Set the channel state appropriately.
+                    m_channel[ch_id].state = CHANNEL_CONNECTED;
+
+                    // Set the flag to trigger submission of the receive buffers to the softdevice.
+                    submit_rx_buffer = true;
+
+                    // Notify the event to the application.
+                    notify_event = true;
+                }
+            }
             break;
         }
         case BLE_L2CAP_EVT_CH_SETUP_REFUSED:
         {
             printf("Received BLE Event BLE_L2CAP_EVT_CH_SETUP_REFUSED\n");
+            // This event is generated for both initiator and acceptor roles.
+            // This event indicates that the IPSP channel establishment failed.
+            retval = channel_search(p_evt->evt.l2cap_evt.conn_handle,
+                                p_evt->evt.l2cap_evt.local_cid,
+                                &ch_id);
+
+            if (retval != NRF_SUCCESS)
+            {
+                BLE_IPSP_TRC("Reply on unknown channel, dropping the event.");
+            }
+            else
+            {
+                if (m_channel[ch_id].state == CHANNEL_CONNECTING)
+                {
+                    // Channel creation failed as peer rejected the connection.
+
+                    // Initialize the event.
+                    ipsp_event.evt_id     = BLE_IPSP_EVT_CHANNEL_CONNECTED;
+                    ipsp_event.evt_result = NRF_ERROR_BLE_IPSP_PEER_REJECTED;
+
+                    BLE_IPSP_ERR("Peer rejected channel creation request, reason %d",
+                              p_evt->evt.l2cap_evt.params.ch_setup_refused.status);
+
+                    // Free the channel.
+                    channel_free(ch_id);
+
+                    // Notify the event to the application.
+                    notify_event = true;
+                }
+            }
             break;
         }
         case BLE_L2CAP_EVT_CH_RELEASED:
@@ -330,13 +394,37 @@ uint32_t ble_ipsp_connect(adapter_t *m_adapter, const ble_ipsp_handle_t * p_hand
     return err_code;
 }
 
-uint32_t ble_ipsp_send(ble_ipsp_handle_t const * p_handle,
+uint32_t ble_ipsp_send(adapter_t *m_adapter,
+                       ble_ipsp_handle_t const * p_handle,
                        uint8_t const           * p_data,
                        uint16_t                  data_len)
 {
-    uint32_t err_code = NRF_ERROR_NOT_SUPPORTED;
-    //TODO: unimplemented
-    printf("(unimplemented) ble_ipsp_send\n");
+    if (m_evt_handler == nullptr) return NRF_ERROR_NULL;
+    if (p_handle == nullptr) return NRF_ERROR_NULL;
+    if (p_data == nullptr) return NRF_ERROR_NULL;
+    if (p_handle->conn_handle == BLE_CONN_HANDLE_INVALID) return NRF_ERROR_NULL;
+
+    uint32_t err_code;
+    uint8_t  ch_id;
+
+    err_code = channel_search(p_handle->conn_handle, p_handle->cid, &ch_id);
+
+    if (err_code == NRF_SUCCESS)
+    {
+        const ble_data_t p_sdu_buf =
+        {
+            .p_data = (uint8_t *)p_data,
+            .len    = data_len
+        };
+
+        BLE_IPSP_TRC("p_sdu_buf = %p, p_sdu_buf.p_data = %p",
+                 &p_sdu_buf, p_data);
+
+        err_code = sd_ble_l2cap_ch_tx(m_adapter,
+                                      p_handle->conn_handle,
+                                      p_handle->cid,
+                                      &p_sdu_buf);
+    }
     return err_code;
 }
 // ================================================================================================

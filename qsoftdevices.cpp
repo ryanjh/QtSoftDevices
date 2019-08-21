@@ -34,7 +34,7 @@ qint64 QSoftDevices::readData(char *data, qint64 maxSize)
         return 0;
 
     qint64 eventSize = event[0] + (event[1] << 8);
-    Q_ASSERT(event[2] == EVTOPCODE);
+    //Q_ASSERT(event[2] == EVTOPCODE);
     if (serialDevice->bytesAvailable() < eventSize + 2)
         return 0;
 

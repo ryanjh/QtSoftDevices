@@ -171,7 +171,8 @@ uint32_t ble_ipsp_connect(adapter_t *m_adapter, ble_ipsp_handle_t const * p_hand
  * @retval NRF_SUCCESS If initialization of the service was successful, else,
  *                     an error code indicating reason for failure.
  */
-uint32_t ble_ipsp_send(ble_ipsp_handle_t const * p_handle,
+uint32_t ble_ipsp_send(adapter_t *m_adapter,
+                       ble_ipsp_handle_t const * p_handle,
                        uint8_t           const * p_data,
                        uint16_t                  data_len);
 
